@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Control - Sigmachat</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .admin-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 20px;
+      background-color: #36393f;
+    }
+    
+    .admin-box {
+      background-color: #2f3136;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+      width: 600px;
+      max-width: 100%;
+    }
+    
+    .admin-box h2 {
+      color: #ffffff;
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .admin-box .subtitle {
+      color: #72767d;
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+    }
+    
+    .section h3 {
+      color: #b5bac1;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #40444b;
+      padding-bottom: 8px;
+    }
+    
+    .admin-list {
+      background-color: #40444b;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .admin-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background-color: #36393f;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    
+    .admin-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .admin-item .username {
+      color: #dcddde;
+      font-weight: 500;
+    }
+    
+    .admin-item .role {
+      color: #72767d;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+
+    .admin-item .super-admin-badge {
+      background-color: #ed4245;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .admin-item .co-admin-badge {
+      background-color: #5865f2;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .remove-btn {
+      background-color: #ed4245;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .remove-btn:hover {
+      background-color: #c73d3f;
+    }
+    
+    .add-admin-section {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .add-admin-section input {
+      flex: 1;
+      padding: 10px 12px;
+      background-color: #40444b;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      color: #dcddde;
+      font-size: 14px;
+    }
+    
+    .add-admin-section input:focus {
+      outline: none;
+      border-color: #5865f2;
+    }
+    
+    .add-btn {
+      background-color: #3ba55c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    
+    .add-btn:hover {
+      background-color: #2d8045;
+    }
+
+    .back-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #4f545c;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      text-align: center;
+    }
+
+    .back-btn:hover {
+      background-color: #5d6269;
+    }
+
+    .notification {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .notification.success {
+      background-color: rgba(59, 165, 92, 0.2);
+      border: 1px solid #3ba55c;
+      color: #3ba55c;
+    }
+
+    .notification.error {
+      background-color: rgba(237, 66, 69, 0.2);
+      border: 1px solid #ed4245;
+      color: #ed4245;
+    }
+
+    .empty-state {
+      color: #72767d;
+      text-align: center;
+      padding: 20px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-box">
+      <h2>Admin Control Panel</h2>
+      <p class="subtitle">Manage co-admins for Sigmachat</p>
+      
+      <div id="notification" class="notification"></div>
+
+      <div class="section">
+        <h3>Super Admin</h3>
+        <div class="admin-list">
+          <div class="admin-item">
+            <div>
+              <span class="username">thatswitchguy</span>
+              <span class="super-admin-badge">Super Admin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Co-Admins</h3>
+        <div class="admin-list" id="co-admins-list">
+          <div class="empty-state">No co-admins yet</div>
+        </div>
+        
+        <div class="add-admin-section">
+          <input type="text" id="new-admin-username" placeholder="Enter username to add as co-admin">
+          <button class="add-btn" onclick="addCoAdmin()">Add Co-Admin</button>
+        </div>
+      </div>
+
+      <a href="/chat" class="back-btn">Back to Chat</a>
+    </div>
+  </div>
+
+  <script>
+    function showNotification(message, type) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `notification ${type}`;
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 4000);
+    }
+
+    function loadCoAdmins() {
+      fetch('/api/admin/co-admins')
+        .then(r => r.json())
+        .then(data => {
+          const list = document.getElementById('co-admins-list');
+          if (data.coAdmins && data.coAdmins.length > 0) {
+            list.innerHTML = '';
+            data.coAdmins.forEach(admin => {
+              const item = document.createElement('div');
+              item.className = 'admin-item';
+              item.innerHTML = `
+                <div>
+                  <span class="username">${admin}</span>
+                  <span class="co-admin-badge">Co-Admin</span>
+                </div>
+                <button class="remove-btn" onclick="removeCoAdmin('${admin}')">Remove</button>
+              `;
+              list.appendChild(item);
+            });
+          } else {
+            list.innerHTML = '<div class="empty-state">No co-admins yet</div>';
+          }
+        })
+        .catch(err => {
+          console.error('Error loading co-admins:', err);
+        });
+    }
+
+    function addCoAdmin() {
+      const input = document.getElementById('new-admin-username');
+      const username = input.value.trim();
+      
+      if (!username) {
+        showNotification('Please enter a username', 'error');
+        return;
+      }
+
+      fetch('/api/admin/co-admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showNotification(`${username} is now a co-admin`, 'success');
+          input.value = '';
+          loadCoAdmins();
+        } else {
+          showNotification(data.error || 'Failed to add co-admin', 'error');
+        }
+      })
+      .catch(err => {
+        showNotification('Failed to add co-admin', 'error');
+      });
+    }
+
+    function removeCoAdmin(username) {
+      fetch('/api/admin/co-admins', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showNotification(`${username} removed from co-admins`, 'success');
+          loadCoAdmins();
+        } else {
+          showNotification(data.error || 'Failed to remove co-admin', 'error');
+        }
+      })
+      .catch(err => {
+        showNotification('Failed to remove co-admin', 'error');
+      });
+    }
+
+    document.getElementById('new-admin-username').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        addCoAdmin();
+      }
+    });
+
+    loadCoAdmins();
+  </script>
+</body>
+</html>

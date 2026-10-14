@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sigmachat</title>
+  <link rel="icon" type="image/png" href="/favicon.png" id="favicon-link">
+  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function() {
+      try {
+        const incognito = localStorage.getItem('incognitoMode') === 'true';
+        if (incognito) {
+          document.title = 'Home';
+          document.addEventListener('DOMContentLoaded', function() {
+            const favicon = document.querySelector('link[rel="icon"]');
+            if (favicon) favicon.href = '/incognito_favicon.ico';
+          });
+        }
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div class="notification-container" id="notification-container"></div>
+  <div id="chat-container">
+    <div id="server-list">
+      <div id="server-list-items"></div>
+      <div class="server-divider"></div>
+      <div class="server-icon add-server" id="add-server-btn" title="Add a Server">
+        <span>+</span>
+      </div>
+      <div class="server-list-spacer"></div>
+    </div>
+
+    <button id="expand-sidebar-btn" title="Expand Sidebar" style="display: none; position: absolute; left: 80px; top: 50%; transform: translateY(-50%); background: #2f3136; border: 1px solid #202225; color: #b5bac1; cursor: pointer; font-size: 16px; padding: 8px 4px; border-radius: 0 4px 4px 0; z-index: 100;">▶</button>
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <h3 id="server-name">Sigmachat</h3>
+        <div style="display: flex; gap: 8px;">
+          <button id="collapse-sidebar-btn" title="Collapse Sidebar" style="background: none; border: none; color: #b5bac1; cursor: pointer; font-size: 18px; padding: 4px 8px;">◀</button>
+          <button id="server-settings-btn" title="Server Settings" style="display: none;"><img src="https://cdn-icons-png.freepik.com/512/1827/1827849.png" style="width: 20px; height: 20px;"></button>
+        </div>
+      </div>
+      <div id="channel-section">
+        <div class="channel-header">
+          <span>TEXT CHANNELS</span>
+          <button id="add-channel-btn" title="Create Channel" style="display: none;">+</button>
+        </div>
+        <div id="channel-list"></div>
+      </div>
+      
+      <div id="dm-section">
+        <div id="dm-header">
+          <h3>Direct Messages</h3>
+        </div>
+        <div id="online-users">
+          <div id="online-user-list"></div>
+        </div>
+      </div>
+
+      <div id="user-panel">
+        <div id="user-info">
+          <div id="user-avatar"></div>
+          <span id="user-name-display"></span>
+        </div>
+        <div id="user-controls">
+          <button id="admin-control-btn" title="Admin Control" style="display: none;"><img src="https://cdn-icons-png.flaticon.com/512/2099/2099058.png" style="width: 20px; height: 20px;"></button>
+          <button id="account-btn" title="Account Settings"><img src="https://cdn-icons-png.freepik.com/512/16273/16273713.png?ga=GA1.1.1935462930.1765644592" style="width: 20px; height: 20px;"></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="main-chat">
+      <div id="chat-header">
+        <h3 id="current-room">#general</h3>
+        <div id="header-actions">
+          <label id="incognito-label" title="Incognito Mode">
+            <span id="incognito-text">Incognito</span>
+            <div class="switch">
+              <input type="checkbox" id="incognito-mode">
+              <span class="slider"></span>
+            </div>
+          </label>
+          <button id="logout-btn">Logout</button>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <button id="scroll-down-btn" title="Scroll to latest messages">⬇</button>
+      <div id="form">
+        <div id="typing-indicator" class="typing-indicator" hidden role="status" aria-live="polite">
+          <span class="typing-indicator-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span id="typing-indicator-text"></span>
+        </div>
+        <form>
+          <div class="chat-input-buttons">
+            <button type="button" id="direct-upload-btn" title="Upload Image/Video">
+              <img src="/assets/10254377-removebg-preview_1768843041746.png" alt="Upload">
+            </button>
+            <button type="button" id="direct-poll-btn" title="Create Poll">
+              <img src="/assets/bulleted_9357359_1768843161915.png" alt="Poll">
+            </button>
+          </div>
+          <input type="file" id="image-upload" accept="image/*,video/*" style="display: none;">
+          <textarea id="input" autocomplete="off" placeholder="Message #general" maxlength="2000"></textarea>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+    <div id="aura-embed-container" style="display: none; flex: 1; height: 100vh;">
+      <iframe src="https://sites.google.com/denbighhigh.co.uk/aura/home" style="width: 100%; height: 100%; border: none;" onclick="window.open('https://sites.google.com/denbighhigh.co.uk/aura/home', '_blank'); return false;"></iframe>
+    </div>
+  </div>
+
+  <section id="stream-viewer-overlay" class="stream-viewer-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="stream-viewer-title">
+    <div class="stream-viewer">
+      <header class="stream-viewer-header">
+        <div class="stream-viewer-title-wrap">
+          <span class="stream-live-indicator">LIVE</span>
+          <div>
+            <h2 id="stream-viewer-title">Screen share</h2>
+            <p id="stream-viewer-subtitle">Connecting to stream…</p>
+          </div>
+        </div>
+        <button type="button" id="stream-viewer-close" class="stream-viewer-icon-button" aria-label="Close stream">×</button>
+      </header>
+      <div class="stream-video-stage" id="stream-video-stage">
+        <video id="stream-remote-video" autoplay playsinline></video>
+        <div id="stream-video-placeholder" class="stream-video-placeholder">Connecting to screen share…</div>
+      </div>
+      <footer class="stream-viewer-controls">
+        <span id="stream-viewer-status">You are watching a live screen share</span>
+        <div>
+          <button type="button" id="stream-audio-toggle" class="stream-control-button">Unmute</button>
+          <button type="button" id="stream-fullscreen-btn" class="stream-control-button">Fullscreen</button>
+          <button type="button" id="stream-leave-btn" class="stream-control-button stream-leave-button">Leave stream</button>
+        </div>
+      </footer>
+    </div>
+  </section>
+
+  <div id="confirm-notification-overlay" class="modal-overlay" style="display: none;">
+    <div id="confirm-notification" class="modal" style="display: none; max-width: 400px;">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirm Action</h2>
+        <button class="modal-close" onclick="closeConfirmNotification()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel" onclick="closeConfirmNotification()">Cancel</button>
+        <button class="btn-danger" id="confirm-ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay" style="display: none;">
+    <div id="create-server-modal" class="modal" style="display: none;">
+      <div class="modal-header">
+        <h2>Create a Server</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Server Name</label>
+          <input type="text" id="new-server-name" placeholder="My Awesome Server" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label>Server Icon URL (optional)</label>
+          <input type="url" id="new-server-icon" placeholder="https://example.com/icon.png">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel">Cancel</button>
+        <button class="btn-primary" id="create-server-submit">Create Server</button>
+      </div>
+    </div>
+
+    <div id="create-channel-modal" class="modal" style="display: none;">
+      <div class="modal-header">
+        <h2>Create Channel</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Channel Name</label>
+          <input type="text" id="new-channel-name" placeholder="new-channel" maxlength="30">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel">Cancel</button>
+        <button class="btn-primary" id="create-channel-submit">Create Channel</button>
+      </div>
+    </div>
+
+    <div id="server-settings-modal" class="modal" style="display: none;">
+      <div class="modal-header">
+        <h2>Server Settings</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Server Name</label>
+          <input type="text" id="edit-server-name" maxlength="50">
+        </div>
+        <div class="form-group">
+          <label>Server Icon</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="url" id="edit-server-icon" placeholder="https://example.com/icon.png" style="flex: 1;">
+            <input type="file" id="server-icon-upload" accept="image/*" style="display: none;">
+            <button type="button" class="btn-secondary" onclick="document.getElementById('server-icon-upload').click()">Upload</button>
+          </div>
+        </div>
+        <div class="danger-zone">
+          <!-- Remember to change image-->
+          <h3>Really look at this stuff </h3>
+          <button class="btn-danger" id="delete-server-btn">Delete Server</button>
+          <button class="btn-secondary" id="leave-server-btn">Leave Server</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel">Cancel</button>
+        <button class="btn-primary" id="save-server-settings">Save Changes</button>
+      </div>
+    </div>
+    <div id="edit-channel-modal" class="modal" style="display: none;">
+      <div class="modal-header">
+        <h2>Edit Channel</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Channel Name</label>
+          <input type="text" id="edit-channel-name-input" placeholder="channel-name" maxlength="30">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel">Cancel</button>
+        <button class="btn-primary" id="edit-channel-submit">Save Changes</button>
+      </div>
+    </div>
+
+    <div id="poll-modal" class="modal" style="display: none;">
+      <div class="modal-header">
+        <h2>Create Poll</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Question</label>
+          <input type="text" id="poll-question-input" placeholder="What's on your mind?" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label>Options</label>
+          <div id="poll-options-container">
+            <div class="poll-option-input-group">
+              <input type="text" class="poll-option-input" placeholder="Option 1" maxlength="50">
+            </div>
+            <div class="poll-option-input-group">
+              <input type="text" class="poll-option-input" placeholder="Option 2" maxlength="50">
+            </div>
+          </div>
+          <button type="button" class="btn-secondary" id="add-poll-option-btn" style="margin-top: 8px;">+ Add Option</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary modal-cancel">Cancel</button>
+        <button class="btn-primary" id="poll-submit">Create Poll</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
+  <script src="/streaming.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "mkocbqalk1ol08o7i",
+    "username": "thatswitchguy",
+    "message": "When creating polls, you need to refresh after creation to make it work",
+    "date": "Jan 21, 2026",
+    "time": "06:12 PM"
+  },
+  {
+    "id": "mv8ldy6zxxl8co7z9",
+    "username": "thatswitchguy",
+    "message": "make sure to refresh after sending messages to delete them or edit them",
+    "date": "Oct 14, 2026",
+    "time": "08:58 PM",
+    "room": "sigmachat:test",
+    "edited": true,
+    "editedAt": "8:59:11 PM"
+  }
+]

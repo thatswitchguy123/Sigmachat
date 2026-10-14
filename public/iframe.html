@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embed Sigmachat</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .embed-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #36393f;
+      padding: 20px;
+    }
+
+    .embed-content {
+      background-color: #2f3136;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .embed-content h2 {
+      color: #ffffff;
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .embed-content p {
+      color: #b9bbbe;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .embed-code-box {
+      background-color: #40444b;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana;
+      font-size: 12px;
+      color: #dcddde;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .copy-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #5865f2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .copy-btn:hover {
+      background-color: #4752c4;
+    }
+
+    .copy-btn.copied {
+      background-color: #3ba55c;
+    }
+
+    .back-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #4f545c;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .back-btn:hover {
+      background-color: #5d6269;
+    }
+  </style>
+</head>
+<body>
+  <div class="embed-container">
+    <div class="embed-content">
+      <h2>Embed Sigmachat</h2>
+      <p>Copy the code below to embed this chat on your website!</p>
+      
+      <div class="embed-code-box" id="embed-code">
+&lt;iframe 
+  src="[APP_URL]/embed" 
+  width="100%" 
+  height="600" 
+  frameborder="0" 
+  allow="microphone; camera"
+  style="border-radius: 8px; border: 1px solid #202225;"&gt;
+&lt;/iframe&gt;
+      </div>
+
+      <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy Embed Code</button>
+      <a href="/login" style="text-decoration: none;"><button class="back-btn">Back to Login</button></a>
+    </div>
+  </div>
+
+  <script>
+    function copyCode() {
+      const codeElement = document.getElementById('embed-code');
+      const text = codeElement.innerText;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.add('copied');
+        
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy code');
+      });
+    }
+
+    // Get the actual app URL
+    const appUrl = window.location.origin;
+    const embedCodeBox = document.getElementById('embed-code');
+    embedCodeBox.innerText = embedCodeBox.innerText.replace('[APP_URL]', appUrl);
+  </script>
+</body>
+</html>

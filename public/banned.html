@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Banned - Sigmachat</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #36393f 0%, #2f3136 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #dcddde;
+    }
+
+    .error-container {
+      background-color: #2f3136;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      padding: 48px 40px;
+      max-width: 500px;
+      text-align: center;
+      border: 1px solid #202225;
+    }
+
+    .error-icon {
+      width: 80px;
+      height: 80px;
+      background-color: #ed4245;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 48px;
+      box-shadow: 0 4px 12px rgba(237, 66, 69, 0.3);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .error-title {
+      color: #ed4245;
+      font-size: 24px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .error-message {
+      color: #b5bac1;
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .error-details {
+      background-color: #202225;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 32px;
+      border-left: 4px solid #ed4245;
+    }
+
+    .error-details p {
+      color: #b5bac1;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .error-details p:last-child {
+      margin-bottom: 0;
+    }
+
+    .ban-duration {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background-color: #5865f2;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #4752c4;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.3);
+    }
+
+    .footer-text {
+      color: #72767d;
+      font-size: 12px;
+      margin-top: 24px;
+    }
+
+    .logo {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="logo">🚫</div>
+    <div class="error-title">Access Denied</div>
+    <h1>Your Account Has Been Banned</h1>
+    
+    <p class="error-message" id="errorMessage">
+      Your account has been suspended due to a violation of our community guidelines. You are no longer able to access Sigmachat.
+    </p>
+
+    <div class="error-details">
+      <p><strong>Ban Status:</strong></p>
+      <p id="banStatus">Permanently Banned</p>
+      <p id="banDurationDisplay" class="ban-duration" style="display: none;"></p>
+    </div>
+
+    <div class="action-buttons">
+      <a href="/login" class="btn btn-primary">Back to Login</a>
+    </div>
+
+    <p class="footer-text">
+      If you believe this is a mistake, please contact an admin.
+    </p>
+  </div>
+
+  <script>
+    // Get URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const banType = params.get('type');
+    const expiresAtParam = params.get('expiresAt');
+
+    const banStatusEl = document.getElementById('banStatus');
+    const durationDisplayEl = document.getElementById('banDurationDisplay');
+
+    function updateTimer() {
+      if (banType === 'temporary' && expiresAtParam && expiresAtParam !== '') {
+        const expirationTime = parseInt(expiresAtParam);
+        
+        if (isNaN(expirationTime)) {
+          banStatusEl.textContent = 'Permanently Banned';
+          return;
+        }
+
+        const now = Date.now();
+        const remainingMs = expirationTime - now;
+
+        if (remainingMs <= 0) {
+          durationDisplayEl.textContent = 'Ban has expired. Please try logging in again.';
+          durationDisplayEl.style.display = 'block';
+          return;
+        }
+
+        const totalSeconds = Math.floor(remainingMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const timeString = `${hours}h ${minutes}m ${seconds}s`;
+        durationDisplayEl.textContent = `Your ban will expire in: ${timeString}`;
+        durationDisplayEl.style.display = 'block';
+      }
+    }
+
+    if (banType === 'temporary' && expiresAtParam && expiresAtParam !== '') {
+      banStatusEl.textContent = 'Temporarily Banned';
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    } else {
+      banStatusEl.textContent = 'Permanently Banned';
+    }
+  </script>
+</body>
+</html>

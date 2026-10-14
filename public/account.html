@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Account</title>
+  <link rel="icon" type="image/png" href="/favicon.png" id="favicon-link">
+  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function() {
+      try {
+        const incognito = localStorage.getItem('incognitoMode') === 'true';
+        if (incognito) {
+          document.title = 'Home';
+          document.addEventListener('DOMContentLoaded', function() {
+            const favicon = document.querySelector('link[rel="icon"]');
+            if (favicon) favicon.href = '/incognito_favicon.ico';
+          });
+        }
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div class="notification-container" id="notification-container"></div>
+  <div id="account-container">
+    <div id="account-sidebar">
+      <div id="account-nav">
+        <h3>Account Settings</h3>
+        <div class="nav-item active" data-section="profile">Profile</div>
+        <div class="nav-item" data-section="privacy">Privacy & Safety</div>
+        <div class="nav-item" data-section="notifications">Notifications</div>
+      </div>
+      <div id="account-actions">
+        <button id="back-to-chat">Back to Chat</button>
+        <button id="logout-account">Logout</button>
+      </div>
+    </div>
+
+    <div id="account-content">
+      <div id="profile-section" class="account-section active">
+        <h2>My Account</h2>
+        <div class="profile-card">
+          <div class="profile-avatar" id="profile-avatar-container" style="cursor: pointer; position: relative;">
+            <img id="user-profile-pic" src="" alt="Profile Picture" style="display: none; width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
+            <div id="user-initial" style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background-color: #5865f2; color: white; font-size: 32px; font-weight: 600;"></div>
+            <div id="profile-edit-overlay" style="position: absolute; top: 0; left: 0; width: 80px; height: 80px; border-radius: 50%; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s;">
+              <span style="font-size: 32px;"><img src="https://cdn-icons-png.freepik.com/512/3550/3550428.png?ga=GA1.1.1935462930.1765644592" style=" width: 30px; height: 30px;"></span>
+            </div>
+          </div>
+          <div class="profile-info">
+            <h3 id="profile-username"></h3>
+            <p class="profile-status">Online</p>
+          </div>
+        </div>
+
+        <div class="account-details">
+          <div class="detail-row">
+            <label>Username</label>
+            <span id="username-display"></span>
+          </div>
+          <div class="detail-row">
+            <label>Account Created</label>
+            <span id="account-created"></span>
+          </div>
+        </div>
+
+        <div class="account-management">
+          <div class="username-change-section">
+            <h4 class="collapsible-header">Change Username</h4>
+            <div class="input-group collapsible-content">
+              <input type="text" id="new-username" placeholder="Enter new username" minlength="3" maxlength="20">
+              <button id="change-username-btn">Change Username</button>
+            </div>
+          </div>
+
+          <div class="password-change-section">
+            <h4 class="collapsible-header">Change Password</h4>
+            <div class="input-group collapsible-content">
+              <input type="password" id="current-password" placeholder="Current password">
+              <input type="password" id="new-password" placeholder="New password" minlength="6">
+              <input type="password" id="confirm-password" placeholder="Confirm new password" minlength="6">
+              <button id="change-password-btn">Change Password</button>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          // Collapsible functionality
+          document.querySelectorAll('.collapsible-header').forEach(header => {
+            header.addEventListener('click', () => {
+              const content = header.nextElementSibling;
+              header.classList.toggle('active');
+              content.classList.toggle('active');
+            });
+          });
+        </script>
+
+        <div class="profile-picture-section">
+          <label>Profile Picture:</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="url" id="profile-url" placeholder="Enter image URL" style="flex: 1;">
+            <button id="update-profile-pic">Update URL</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="file" id="profile-upload" accept="image/*" style="display: none;">
+            <button onclick="document.getElementById('profile-upload').click()">Upload File</button>
+            <button id="remove-profile-pic" class="btn-danger">Remove Picture</button>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // Handle file upload
+        document.getElementById('profile-upload')?.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const formData = new FormData();
+          formData.append('profilePicture', file);
+
+          fetch('/api/profile-picture/upload', {
+            method: 'POST',
+            body: formData
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              loadProfilePicture();
+              showNotification('Profile picture uploaded!', 'success');
+            } else {
+              showNotification(data.error || 'Upload failed', 'error');
+            }
+          })
+          .catch(() => showNotification('Upload failed', 'error'));
+        });
+      </script>
+
+      <div id="privacy-section" class="account-section">
+        <h2>Privacy & Safety</h2>
+        <div class="setting-group">
+          <h4>Incognito Mode</h4>
+          <div class="setting-item">
+            <label>
+              <span>Enable Incognito Mode (Favicon + Title change)</span>
+              <div class="switch">
+                <input type="checkbox" id="incognito-mode">
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h4>Direct Messages</h4>
+          <div class="setting-item">
+            <label>
+              <span>Allow direct messages from server members</span>
+              <div class="switch">
+                <input type="checkbox" id="allow-dms" checked>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h4>Data & Privacy</h4>
+          <div class="setting-item">
+            <label>
+              <span>Use data to improve Sigmachat (these are fake, dont worry)</span>
+              <div class="switch">
+                <input type="checkbox" id="data-usage" checked>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div id="notifications-section" class="account-section">
+        <h2>Notifications</h2>
+        <div class="setting-group">
+          <h4>Desktop Notifications</h4>
+          <div class="setting-item">
+            <label>
+              <span>Enable desktop notifications</span>
+              <div class="switch">
+                <input type="checkbox" id="desktop-notifications" checked>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h4>Sounds</h4>
+          <div class="setting-item">
+            <label>
+              <span>Message notification sounds</span>
+              <div class="switch">
+                <input type="checkbox" id="message-sounds" checked>
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let username = null;
+
+    // Load preferences from server
+    const allowDMsCheckbox = document.getElementById('allow-dms');
+    const dataUsageCheckbox = document.getElementById('data-usage');
+    const desktopNotificationsCheckbox = document.getElementById('desktop-notifications');
+    const messageSoundsCheckbox = document.getElementById('message-sounds');
+    const incognitoCheckbox = document.getElementById('incognito-mode');
+
+    // Load saved preferences from server
+    function loadUserSettings() {
+      fetch('/api/user-settings')
+        .then(response => response.json())
+        .then(settings => {
+          allowDMsCheckbox.checked = settings.allowDMs !== false;
+          dataUsageCheckbox.checked = settings.dataUsage !== false;
+          desktopNotificationsCheckbox.checked = settings.desktopNotifications !== false;
+          messageSoundsCheckbox.checked = settings.messageSounds !== false;
+          incognitoCheckbox.checked = settings.incognitoMode === true;
+          // Sync localStorage with server settings
+          localStorage.setItem('incognitoMode', (settings.incognitoMode === true).toString());
+          updateIncognito();
+        })
+        .catch(error => {
+          console.error('Error loading settings:', error);
+          // Fallback to defaults
+          allowDMsCheckbox.checked = true;
+          dataUsageCheckbox.checked = true;
+          desktopNotificationsCheckbox.checked = true;
+          messageSoundsCheckbox.checked = true;
+          incognitoCheckbox.checked = false;
+        });
+    }
+
+    loadUserSettings();
+
+    function updateIncognito() {
+      const favicon = document.querySelector('link[rel="icon"]');
+      if (incognitoCheckbox && incognitoCheckbox.checked) {
+        document.title = 'Home';
+        if (favicon) {
+          favicon.href = '/incognito_favicon.ico';
+          // Force update for chrome/firefox
+          const newFavicon = favicon.cloneNode(true);
+          favicon.parentNode.replaceChild(newFavicon, favicon);
+        }
+      } else {
+        document.title = 'Account';
+        if (favicon) {
+          favicon.href = '/favicon.png';
+          const newFavicon = favicon.cloneNode(true);
+          favicon.parentNode.replaceChild(newFavicon, favicon);
+        }
+      }
+    }
+
+    // Save preferences to server when toggled
+    function saveUserSettings() {
+      const settings = {
+        allowDMs: allowDMsCheckbox.checked,
+        dataUsage: dataUsageCheckbox.checked,
+        desktopNotifications: desktopNotificationsCheckbox.checked,
+        messageSounds: messageSoundsCheckbox.checked,
+        incognitoMode: incognitoCheckbox.checked
+      };
+
+      // Store incognito mode in localStorage for persistence across page reloads
+      localStorage.setItem('incognitoMode', incognitoCheckbox.checked.toString());
+      
+      updateIncognito();
+
+      fetch('/api/user-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      })
+      .catch(error => {
+        console.error('Error saving settings:', error);
+      });
+    }
+
+    allowDMsCheckbox.addEventListener('change', saveUserSettings);
+    dataUsageCheckbox.addEventListener('change', saveUserSettings);
+    desktopNotificationsCheckbox.addEventListener('change', saveUserSettings);
+    messageSoundsCheckbox.addEventListener('change', saveUserSettings);
+    incognitoCheckbox.addEventListener('change', saveUserSettings);
+
+    // Load user info
+    fetch('/api/user')
+      .then(response => response.json())
+      .then(data => {
+        if (data.username) {
+          username = data.username;
+          document.getElementById('profile-username').textContent = username;
+          document.getElementById('username-display').textContent = username;
+          document.getElementById('user-initial').textContent = username.charAt(0).toUpperCase();
+          document.getElementById('account-created').textContent = 'Recently'; // Could be enhanced with actual date
+        }
+      })
+      .catch(() => {
+        window.location.href = '/login';
+      });
+
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        // Remove active from all nav items and sections
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        document.querySelectorAll('.account-section').forEach(section => section.classList.remove('active'));
+
+        // Add active to clicked nav item
+        item.classList.add('active');
+
+        // Show corresponding section
+        const sectionId = item.dataset.section + '-section';
+        document.getElementById(sectionId).classList.add('active');
+      });
+    });
+
+    // Back to chat
+    const backBtn = document.getElementById('back-to-chat');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/chat';
+      });
+    }
+
+    // Profile avatar edit overlay
+    const avatarContainer = document.getElementById('profile-avatar-container');
+    const editOverlay = document.getElementById('profile-edit-overlay');
+    if (avatarContainer && editOverlay) {
+      avatarContainer.addEventListener('mouseenter', () => {
+        editOverlay.style.display = 'flex';
+        setTimeout(() => { editOverlay.style.opacity = '1'; }, 10);
+      });
+      avatarContainer.addEventListener('mouseleave', () => {
+        editOverlay.style.opacity = '0';
+        setTimeout(() => { editOverlay.style.display = 'none'; }, 200);
+      });
+      avatarContainer.addEventListener('click', () => {
+        window.location.href = '/image-edit.html';
+      });
+    }
+
+    // Logout
+    document.getElementById('logout-account').addEventListener('click', () => {
+      fetch('/logout', { method: 'POST' })
+        .then(() => {
+          window.location.href = '/login';
+        })
+        .catch(err => {
+          console.error('Logout failed:', err);
+        });
+    });
+
+    // Load current profile picture
+    function loadProfilePicture() {
+      fetch('/api/profile-picture')
+        .then(response => response.json())
+        .then(data => {
+          const profilePic = document.getElementById('user-profile-pic');
+          const userInitial = document.getElementById('user-initial');
+          const profileUrl = document.getElementById('profile-url');
+          
+          if (data.profilePicture) {
+            profilePic.src = data.profilePicture;
+            profilePic.style.display = 'block';
+            userInitial.style.display = 'none';
+            profileUrl.value = data.profilePicture;
+          } else {
+            profilePic.style.display = 'none';
+            userInitial.style.display = 'block';
+            profileUrl.value = '';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading profile picture:', error);
+          document.getElementById('user-profile-pic').style.display = 'none';
+          document.getElementById('user-initial').style.display = 'block';
+        });
+    }
+    
+    loadProfilePicture();
+
+    // Update profile picture
+    document.getElementById('update-profile-pic').addEventListener('click', () => {
+      const profileUrl = document.getElementById('profile-url').value.trim();
+      if (profileUrl) {
+        fetch('/api/profile-picture', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ profilePicture: profileUrl })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            loadProfilePicture(); // Reload to ensure proper display
+            showNotification('Profile picture updated successfully!', 'success');
+          } else {
+            showNotification('Failed to update profile picture: ' + data.error, 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error updating profile picture:', error);
+          showNotification('Failed to update profile picture', 'error');
+        });
+      } else {
+        showNotification('Please enter a valid image URL', 'warning');
+      }
+    });
+
+    // Remove profile picture
+    document.getElementById('remove-profile-pic').addEventListener('click', () => {
+      fetch('/api/profile-picture', {
+        method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadProfilePicture(); // Reload to ensure proper display
+          showNotification('Profile picture removed successfully!', 'success');
+        } else {
+          showNotification('Failed to remove profile picture: ' + data.error, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error removing profile picture:', error);
+        showNotification('Failed to remove profile picture', 'error');
+      });
+    });
+
+    // Change username
+    document.getElementById('change-username-btn').addEventListener('click', () => {
+      const newUsername = document.getElementById('new-username').value.trim();
+      if (!newUsername) {
+        showNotification('Please enter a new username', 'warning');
+        return;
+      }
+      
+      if (newUsername.length < 3 || newUsername.length > 20) {
+        showNotification('Username must be between 3 and 20 characters', 'warning');
+        return;
+      }
+
+      fetch('/api/change-username', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newUsername })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Username changed successfully! Please log in again.', 'success');
+          setTimeout(() => {
+            fetch('/logout', { method: 'POST' })
+              .then(() => {
+                window.location.href = '/login';
+              });
+          }, 2000);
+        } else {
+          showNotification('Failed to change username: ' + data.error, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error changing username:', error);
+        showNotification('Failed to change username', 'error');
+      });
+    });
+
+    // Notification system
+    function showNotification(message, type = 'info', title = '') {
+      const container = document.getElementById('notification-container');
+      if (!container) return;
+
+      const notification = document.createElement('div');
+      notification.className = `notification-toast ${type}`;
+      
+      const titleText = title || (type === 'error' ? 'Error' : type === 'success' ? 'Success' : type === 'warning' ? 'Warning' : 'Notification');
+      
+      notification.innerHTML = `
+        <div class="notification-content">
+          <div class="notification-title">${titleText}</div>
+          <div class="notification-message">${message}</div>
+        </div>
+        <button class="notification-close">&times;</button>
+      `;
+      
+      container.appendChild(notification);
+      
+      const closeBtn = notification.querySelector('.notification-close');
+      closeBtn.addEventListener('click', () => {
+        notification.classList.add('closing');
+        setTimeout(() => notification.remove(), 300);
+      });
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.classList.add('closing');
+          setTimeout(() => notification.remove(), 300);
+        }
+      }, 5000);
+    }
+
+    // Change password
+    document.getElementById('change-password-btn').addEventListener('click', () => {
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showNotification('Please fill in all password fields', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showNotification('New password must be at least 6 characters', 'warning');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showNotification('New password and confirmation do not match', 'error');
+        return;
+      }
+
+      fetch('/api/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showNotification('Password changed successfully!', 'success');
+          // Clear password fields
+          document.getElementById('current-password').value = '';
+          document.getElementById('new-password').value = '';
+          document.getElementById('confirm-password').value = '';
+        } else {
+          showNotification('Failed to change password: ' + data.error, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error changing password:', error);
+        showNotification('Failed to change password', 'error');
+      });
+    });
+  </script>
+</body>
+</html>

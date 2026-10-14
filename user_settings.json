@@ -1,0 +1,28 @@
+{
+  "thatswitchguy": {
+    "allowDMs": true,
+    "dataUsage": true,
+    "desktopNotifications": true,
+    "messageSounds": true,
+    "incognitoMode": true
+  },
+  "other_banana": {
+    "allowDMs": true,
+    "dataUsage": true,
+    "desktopNotifications": true,
+    "messageSounds": true
+  },
+  "test account": {
+    "allowDMs": true,
+    "dataUsage": true,
+    "desktopNotifications": false,
+    "messageSounds": true
+  },
+  "test123": {
+    "allowDMs": true,
+    "dataUsage": true,
+    "desktopNotifications": true,
+    "messageSounds": true,
+    "incognitoMode": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ikhan": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1764274728441,
+    "expiresAt": null
+  },
+  "test": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1764407162866,
+    "expiresAt": null
+  },
+  "thesigma": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1764407183689,
+    "expiresAt": null
+  },
+  "other_banana": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1774456515028,
+    "expiresAt": null
+  },
+  "test account": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1774457009188,
+    "expiresAt": null
+  },
+  "test-other": {
+    "bannedBy": "thatswitchguy",
+    "bannedAt": 1792010134000,
+    "expiresAt": null
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Google Sans",
+      "role": "body"
+    },
+    {
+      "family": "Roboto",
+      "role": "body"
+    },
+    {
+      "family": "Noto Sans Myanmar UI",
+      "role": "unknown"
+    },
+    {
+      "family": "Noto Sans Khmer",
+      "role": "unknown"
+    },
+    {
+      "family": "Arial",
+      "role": "body"
+    }
+  ],
+  "colors": {
+    "primary": "#0B57D0",
+    "accent": "#0B57D0",
+    "background": "#FFFFFF",
+    "textPrimary": "#5F6368",
+    "link": "#A50E0E"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Google Sans",
+      "heading": "Google Sans"
+    },
+    "fontStacks": {
+      "heading": [
+        "Google Sans",
+        "Roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "Arial",
+        "sans-serif"
+      ],
+      "body": [
+        "Google Sans",
+        "Roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "Arial",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "Google Sans",
+        "Roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "Arial",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "44px",
+      "h2": "44px",
+      "body": "14px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "8px"
+  },
+  "components": {
+    "input": {
+      "background": "transparent",
+      "textColor": "#1F1F1F",
+      "borderColor": null,
+      "borderRadius": "4px",
+      "borderRadiusCorners": {
+        "topLeft": "4px",
+        "topRight": "4px",
+        "bottomRight": "4px",
+        "bottomLeft": "4px"
+      },
+      "shadow": "none"
+    },
+    "buttonPrimary": {
+      "background": "#0B57D0",
+      "textColor": "#FFFFFF",
+      "borderRadius": "20px",
+      "borderRadiusCorners": {
+        "topLeft": "20px",
+        "topRight": "20px",
+        "bottomRight": "20px",
+        "bottomLeft": "20px"
+      },
+      "shadow": "none"
+    }
+  },
+  "images": {
+    "logo": null,
+    "favicon": null,
+    "ogImage": null
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Next",
+      "reasoning": "The button with the text 'Next' has a vibrant blue background (#0B57D0), which is a strong indicator of a primary call-to-action. This color is consistent with Google's brand color, making it the most prominent button on the page."
+    },
+    "secondary": {
+      "index": -1,
+      "text": "N/A",
+      "reasoning": "There is only one button detected, so no secondary button can be selected. The primary button is the only option available."
+    },
+    "confidence": 1
+  },
+  "personality": {
+    "tone": "professional",
+    "energy": "medium",
+    "targetAudience": "general users of Google services"
+  },
+  "designSystem": {
+    "framework": "custom",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 1,
+    "colors": 1,
+    "overall": 1
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": false,
+      "llmSucceeded": false,
+      "finalSource": "none"
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

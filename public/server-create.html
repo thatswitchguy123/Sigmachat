@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Server - Sigmachat</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .room-create-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #36393f;
+    }
+    
+    .room-create-box {
+      background-color: #2f3136;
+      padding: 32px;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+      width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .room-create-box h2 {
+      color: #ffffff;
+      margin-bottom: 24px;
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      color: #b5bac1;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      background-color: #40444b;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      color: #dcddde;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #7289da;
+    }
+
+    .users-section {
+      margin-bottom: 20px;
+    }
+
+    .users-section h3 {
+      color: #b5bac1;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+    }
+
+    .users-list {
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: #40444b;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      padding: 8px;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 4px;
+      background-color: #36393f;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .user-item:hover {
+      background-color: #4f545c;
+    }
+
+    .user-item input[type="checkbox"] {
+      margin-right: 8px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .user-item label {
+      flex: 1;
+      color: #dcddde;
+      margin: 0;
+      cursor: pointer;
+      font-size: 14px;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .selected-users {
+      margin-top: 12px;
+      color: #72767d;
+      font-size: 12px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    
+    .room-create-box button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .room-create-box .create-btn {
+      background-color: #5865f2;
+      color: white;
+    }
+    
+    .room-create-box .create-btn:hover {
+      background-color: #4752c4;
+    }
+    
+    .room-create-box .create-btn:disabled {
+      background-color: #747f8d;
+      cursor: not-allowed;
+    }
+    
+    .room-create-box .cancel-btn {
+      background-color: #4f545c;
+      color: white;
+    }
+    
+    .room-create-box .cancel-btn:hover {
+      background-color: #5d6269;
+    }
+    
+    .error-msg {
+      color: #ed4245;
+      font-size: 12px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="room-create-container">
+    <div class="room-create-box">
+      <h2>Create New Server</h2>
+      <div id="error-msg" class="error-msg"></div>
+      
+      <div class="form-group">
+        <label for="server-name">Server Name (3-50 characters)</label>
+        <input id="server-name" type="text" placeholder="My Awesome Server" maxlength="50" minlength="3">
+      </div>
+      
+      <div class="form-group">
+        <label for="server-icon">Server Icon URL (optional)</label>
+        <input id="server-icon" type="url" placeholder="https://example.com/icon.png">
+      </div>
+
+      <div class="users-section">
+        <h3>Invite Users (Optional)</h3>
+        <input id="user-search" type="text" placeholder="Search username..." style="margin-bottom: 8px; padding: 8px; background-color: #40444b; border: 1px solid #202225; border-radius: 4px; color: #dcddde; font-size: 14px; width: 100%; box-sizing: border-box;">
+        <div class="users-list" id="users-list"></div>
+        <div class="selected-users" id="selected-users">0 users selected</div>
+      </div>
+      
+      <div class="button-group">
+        <button class="cancel-btn" onclick="window.location.href='/chat'">Cancel</button>
+        <button class="create-btn" id="create-server-btn" onclick="createServer()">Create Server</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allUsers = [];
+    let selectedUsers = new Set();
+
+    fetch('/api/users')
+      .then(response => response.json())
+      .then(users => {
+        allUsers = users;
+        renderUsersList(allUsers);
+      });
+
+    function renderUsersList(usersToShow) {
+      const usersList = document.getElementById('users-list');
+      usersList.innerHTML = '';
+      
+      usersToShow.forEach(user => {
+        const userItem = document.createElement('div');
+        userItem.className = 'user-item';
+        const isSelected = selectedUsers.has(user);
+        
+        userItem.innerHTML = `
+          <input type="checkbox" id="user-${user}" ${isSelected ? 'checked' : ''} onchange="toggleUser('${user}')">
+          <label for="user-${user}">${user}</label>
+        `;
+        usersList.appendChild(userItem);
+      });
+      
+      updateSelectedCount();
+    }
+
+    function toggleUser(username) {
+      if (selectedUsers.has(username)) {
+        selectedUsers.delete(username);
+      } else {
+        selectedUsers.add(username);
+      }
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      document.getElementById('selected-users').textContent = `${selectedUsers.size} user${selectedUsers.size !== 1 ? 's' : ''} selected`;
+    }
+
+    document.getElementById('user-search').addEventListener('input', (e) => {
+      const search = e.target.value.toLowerCase();
+      const filtered = allUsers.filter(u => u.toLowerCase().includes(search));
+      renderUsersList(filtered);
+    });
+
+    function createServer() {
+      const serverName = document.getElementById('server-name').value.trim();
+      const serverIcon = document.getElementById('server-icon').value.trim();
+      const errorMsg = document.getElementById('error-msg');
+      
+      if (!serverName) {
+        errorMsg.textContent = 'Server name is required';
+        return;
+      }
+      
+      if (serverName.length < 3 || serverName.length > 50) {
+        errorMsg.textContent = 'Server name must be 3-50 characters';
+        return;
+      }
+      
+      errorMsg.textContent = '';
+      
+      fetch('/api/servers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name: serverName,
+          icon: serverIcon || null,
+          invitedUsers: Array.from(selectedUsers)
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = '/chat';
+        } else {
+          errorMsg.textContent = data.error || 'Failed to create server';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        errorMsg.textContent = 'Error creating server';
+      });
+    }
+
+    document.getElementById('server-name').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        createServer();
+      }
+    });
+  </script>
+</body>
+</html>
