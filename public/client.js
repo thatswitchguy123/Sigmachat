@@ -527,10 +527,12 @@ function hideMessageActions(element) {
 function appendMessage(messageData, index, type) {
   const messagesContainer = document.getElementById('messages');
   const messageDiv = document.createElement('div');
-  messageDiv.className = messageData.username === 'System' ? 'message system' : 'message';
+  const isDM = type === 'dm';
+  const displayUsername = messageData.username || (isDM ? messageData.from : '');
+  messageDiv.className = isDM ? 'message dm-message' : messageData.username === 'System' ? 'message system' : 'message';
   messageDiv.dataset.messageId = messageData.id;
 
-  if (messageData.username === 'System' || !messageData.username) {
+  if (displayUsername === 'System' || !displayUsername) {
     messageDiv.innerHTML = `<span class="content">${messageData.message}</span>`;
     messagesContainer.appendChild(messageDiv);
     return;
@@ -604,23 +606,32 @@ function appendMessage(messageData, index, type) {
   const messageId = messageData.id;
   const editedIndicator = messageData.edited ? ` <span class="edited">(edited)</span>` : '';
 
-  fetch(`/api/user-profile/${messageData.username}`)
-    .then(r => r.json())
-    .then(profile => {
-      let avatar;
-      if (profile.profilePicture) {
-        avatar = `<img src="${profile.profilePicture}" alt="${messageData.username}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                  <div style="display: none; width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${messageData.username.charAt(0).toUpperCase()}</div>`;
-      } else {
-        avatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${messageData.username.charAt(0).toUpperCase()}</div>`;
-      }
-
-      const messageActions = messageData.username === username ? `
+  const hasSavedProfilePicture = Object.prototype.hasOwnProperty.call(messageData, 'profilePicture');
+  const profileRequest = hasSavedProfilePicture
+    ? Promise.resolve({ profilePicture: messageData.profilePicture })
+    : fetch(`/api/user-profile/${encodeURIComponent(displayUsername)}`).then(r => r.json());
+  const messageActions = isDM
+    ? (displayUsername === username ? `
+        <div class="message-actions" style="display: none; margin-left: 8px;">
+          <button class="delete-btn" onclick="deleteMessage('${messageData.from}', null, '${messageId}', 'dm')">Delete</button>
+        </div>
+      ` : '')
+    : (displayUsername === username ? `
         <div class="message-actions" style="display: none; margin-left: 8px;">
           <button class="edit-btn" onclick="editMessage('${currentServer}', '${currentChannel}', '${messageId}', 'room')">Edit</button>
           <button class="delete-btn" onclick="deleteMessage('${currentServer}', '${currentChannel}', '${messageId}', 'room')">Delete</button>
         </div>
-      ` : '';
+      ` : '');
+
+  profileRequest
+    .then(profile => {
+      let avatar;
+      if (profile.profilePicture) {
+        avatar = `<img src="${profile.profilePicture}" alt="${displayUsername}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div style="display: none; width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${displayUsername.charAt(0).toUpperCase()}</div>`;
+      } else {
+        avatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${displayUsername.charAt(0).toUpperCase()}</div>`;
+      }
 
       messageDiv.innerHTML = `
         <div style="display: flex; align-items: flex-start;">
@@ -628,7 +639,7 @@ function appendMessage(messageData, index, type) {
           <div style="flex: 1;">
             ${date ? `<div class="message-date">${date}</div>` : ''}
             <span class="timestamp">[${time}]</span>
-            <span class="username">${messageData.username}:</span>
+            <span class="username">${displayUsername}:</span>
             <span class="content">${processedMessage}</span>
             ${editedIndicator}
           </div>
@@ -637,20 +648,13 @@ function appendMessage(messageData, index, type) {
       `;
     })
     .catch(() => {
-      const messageActions = messageData.username === username ? `
-        <div class="message-actions" style="display: none; margin-left: 8px;">
-          <button class="edit-btn" onclick="editMessage('${currentServer}', '${currentChannel}', '${messageId}', 'room')">Edit</button>
-          <button class="delete-btn" onclick="deleteMessage('${currentServer}', '${currentChannel}', '${messageId}', 'room')">Delete</button>
-        </div>
-      ` : '';
-
       messageDiv.innerHTML = `
         <div style="display: flex; align-items: flex-start;">
-          <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${messageData.username.charAt(0).toUpperCase()}</div>
+          <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${displayUsername.charAt(0).toUpperCase()}</div>
           <div style="flex: 1;">
             ${date ? `<div class="message-date">${date}</div>` : ''}
             <span class="timestamp">[${time}]</span>
-            <span class="username">${messageData.username}:</span>
+            <span class="username">${displayUsername}:</span>
             <span class="content">${processedMessage}</span>
             ${editedIndicator}
           </div>
@@ -2223,69 +2227,7 @@ socket.on('dm message', (data) => {
 
   // Only show if we're in the DM with this user
   if (isCurrentDM) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message dm-message';
-    messageDiv.dataset.messageId = data.id;
-
-    // Process mentions, links, and images in DM messages
-    let processedMessage = data.message;
-    if (processedMessage.includes('@')) {
-      processedMessage = processedMessage.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
-    }
-    processedMessage = processedMessage.replace(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^\s]*)?)/gi, '<img src="$1" alt="Image" class="message-image" onclick="openImageModal(\'$1\')">');
-    processedMessage = processedMessage.replace(/(https?:\/\/[^\s]+\.(mp4|webm|mov|avi|mkv|ogg)(\?[^\s]*)?)/gi, '<video src="$1" class="message-video" controls preload="metadata"></video>');
-    processedMessage = processedMessage.replace(/(https?:\/\/[^\s]+)/g, function(match) {
-      if (match.match(/\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|mov|avi|mkv|ogg)/i)) return match;
-      return '<a href="' + match + '" target="_blank" class="message-link">' + match + '</a>';
-    });
-
-    const dmMsgDate = data.date || '';
-    const dmMsgTime = data.time || '';
-    const dmMessageActions = data.from === username ? `
-      <div class="message-actions" style="display: none; margin-left: 8px;">
-        <button class="delete-btn" onclick="deleteMessage('${data.from}', null, '${data.id}', 'dm')">Delete</button>
-      </div>
-    ` : '';
-
-    fetch(`/api/user-profile/${data.from}`)
-      .then(r => r.json())
-      .then(profile => {
-        let avatar;
-        if (profile.profilePicture) {
-          avatar = `<img src="${profile.profilePicture}" alt="${data.from}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div style="display: none; width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${data.from.charAt(0).toUpperCase()}</div>`;
-        } else {
-          avatar = `<div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${data.from.charAt(0).toUpperCase()}</div>`;
-        }
-        messageDiv.innerHTML = `
-          <div style="display: flex; align-items: flex-start;">
-            ${avatar}
-            <div style="flex: 1;">
-              ${dmMsgDate ? `<div class="message-date">${dmMsgDate}</div>` : ''}
-              <span class="timestamp">[${dmMsgTime}]</span>
-              <span class="username">${data.from}:</span>
-              <span class="content">${processedMessage}</span>
-            </div>
-            ${dmMessageActions}
-          </div>
-        `;
-      })
-      .catch(() => {
-        messageDiv.innerHTML = `
-          <div style="display: flex; align-items: flex-start;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 8px;">${data.from.charAt(0).toUpperCase()}</div>
-            <div style="flex: 1;">
-              ${dmMsgDate ? `<div class="message-date">${dmMsgDate}</div>` : ''}
-              <span class="timestamp">[${dmMsgTime}]</span>
-              <span class="username">${data.from}:</span>
-              <span class="content">${processedMessage}</span>
-            </div>
-            ${dmMessageActions}
-          </div>
-        `;
-      });
-
-    messages.appendChild(messageDiv);
+    appendMessage({ ...data, username: data.username || data.from }, null, 'dm');
     autoScrollIfAtBottom();
   }
 

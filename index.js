@@ -1385,7 +1385,17 @@ app.get('/api/dm/:targetUser', (req, res) => {
   try {
     if (fs.existsSync(dmFile)) {
       const dmData = fs.readFileSync(dmFile, 'utf8');
-      res.json(JSON.parse(dmData));
+      const dmMessages = JSON.parse(dmData);
+      res.json(Array.isArray(dmMessages) ? dmMessages.map(message => {
+        const sender = message.username || message.from;
+        return {
+          ...message,
+          username: sender,
+          profilePicture: Object.prototype.hasOwnProperty.call(message, 'profilePicture')
+            ? message.profilePicture
+            : profilePictures[sender] || null
+        };
+      }) : []);
     } else {
       res.json([]);
     }
@@ -2205,12 +2215,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('dm message', (data) => {
-    const { targetUser, message } = data;
+    if (!data || typeof data !== 'object') return;
+    const { targetUser } = data;
+    const message = typeof data.message === 'string' ? data.message.trim() : '';
+    if (typeof targetUser !== 'string' || !users[targetUser] || targetUser === user ||
+        !message || message.length > 2000) return;
+
     const ts = formatTimestamp();
     const messageData = {
       id: ts.id,
       from: user,
       to: targetUser,
+      username: user,
+      profilePicture: profilePictures[user] || null,
       message: message,
       date: ts.date,
       time: ts.time
