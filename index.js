@@ -45,6 +45,72 @@ async function saveToGoogleSheets(data) {
   }
 }
 
+async function updateGoogleSheetsMessage(data) {
+  if (!process.env.GOOGLE_SCRIPT_URL ||
+      !process.env.GOOGLE_SHEETS_SECRET) {
+    return;
+  }
+
+  try {
+    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        ...data,
+        action: "update",
+        secret: process.env.GOOGLE_SHEETS_SECRET
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || `HTTP ${response.status}`);
+    }
+
+    console.log("[Google Sheets] Message updated:", data.id);
+
+  } catch (error) {
+    console.error("[Google Sheets] Edit failed:", error.message);
+    throw error;
+  }
+}
+
+async function deleteGoogleSheetsMessage(id) {
+  if (!process.env.GOOGLE_SCRIPT_URL ||
+      !process.env.GOOGLE_SHEETS_SECRET) return;
+
+  try {
+    console.log("[Google Sheets] Sending DELETE request:", id);
+    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        id,
+        action: "delete",
+        secret: process.env.GOOGLE_SHEETS_SECRET
+      })
+    });
+
+    const result = await response.json();
+    console.log("[Google Sheets] DELETE response:", result);
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || `HTTP ${response.status}`);
+    }
+
+    console.log("[Google Sheets] Message deleted:", id);
+
+  } catch (error) {
+    console.error("[Google Sheets] Delete failed:", error.message);
+    throw error;
+  }
+}
+
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -1664,7 +1730,7 @@ app.get('/api/user-profile/:username', (req, res) => {
 });
 
 // API to edit a room message
-app.put('/api/servers/:serverId/channels/:channelId/messages/:messageId', (req, res) => {
+app.put('/api/servers/:serverId/channels/:channelId/messages/:messageId', async (req, res) => {
   if (!req.username) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
@@ -1673,18 +1739,21 @@ app.put('/api/servers/:serverId/channels/:channelId/messages/:messageId', (req, 
   const { newMessage } = req.body;
 
   let messages = loadServerMessages(serverId, channelId);
-  const index = messages.findIndex(m => m.id === messageId || m.timestamp === messageId);
+  const index = messages.findIndex(m =>
+    String(m.id) === messageId || String(m.timestamp) === messageId
+  );
 
   if (index === -1) {
     return res.status(404).json({ error: 'Message not found, try refreshing the page' });
   }
 
   const message = messages[index];
+
   if (message.username !== req.username) {
     return res.status(403).json({ error: 'Can only edit your own messages' });
   }
 
-  if (!newMessage || newMessage.trim().length === 0) {
+  if (!newMessage || !newMessage.trim()) {
     return res.status(400).json({ error: 'Message cannot be empty' });
   }
 
@@ -1693,6 +1762,14 @@ app.put('/api/servers/:serverId/channels/:channelId/messages/:messageId', (req, 
   messages[index].editedAt = new Date().toLocaleTimeString();
 
   saveServerMessages(serverId, channelId, messages);
+
+  // Update Google Sheets if this is a normal SigmaChat message
+  if (!String(message.id).startsWith('google-sheet-')) {
+    await updateGoogleSheetsMessage({
+      id: message.id || message.timestamp,
+      message: newMessage.trim()
+    });
+  }
 
   io.to(`${serverId}:${channelId}`).emit('message edited', {
     serverId,
@@ -1806,7 +1883,7 @@ app.put('/api/dm/:targetUser/messages/:messageId', (req, res) => {
 });
 
 // API to delete a DM message
-app.delete('/api/dm/:targetUser/messages/:messageId', (req, res) => {
+app.delete('/api/dm/:targetUser/messages/:messageId', async (req, res) => {
   if (!req.username) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
@@ -1817,6 +1894,7 @@ app.delete('/api/dm/:targetUser/messages/:messageId', (req, res) => {
   const dmFile = path.join(__dirname, `dm_${dmKey}.json`);
 
   let dmHistory = [];
+
   try {
     if (fs.existsSync(dmFile)) {
       const dmData = fs.readFileSync(dmFile, 'utf8');
@@ -1827,21 +1905,34 @@ app.delete('/api/dm/:targetUser/messages/:messageId', (req, res) => {
     return res.status(500).json({ error: 'Error loading DM history' });
   }
 
-  const index = dmHistory.findIndex(m => m.id === messageId || m.timestamp === messageId);
+  const index = dmHistory.findIndex(m =>
+    String(m.id) === messageId || String(m.timestamp) === messageId
+  );
+
   if (index === -1) {
     return res.status(404).json({ error: 'Message not found, try refreshing the page' });
   }
 
   const message = dmHistory[index];
+
   if (message.from !== req.username) {
     return res.status(403).json({ error: 'Can only delete your own messages' });
   }
 
+  // Delete from Google Sheets
+  try {
+    await deleteGoogleSheetsMessage(message.id || message.timestamp);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to delete message from Google Sheets' });
+  }
+
+  // Delete locally
   dmHistory.splice(index, 1);
   saveDMMessages(req.username, targetUser, dmHistory);
 
   const targetSocket = Array.from(io.sockets.sockets.values())
     .find(s => s.username === targetUser);
+
   const senderSocket = Array.from(io.sockets.sockets.values())
     .find(s => s.username === req.username);
 
@@ -1853,13 +1944,13 @@ app.delete('/api/dm/:targetUser/messages/:messageId', (req, res) => {
   if (targetSocket) {
     targetSocket.emit('dm message deleted', deleteData);
   }
+
   if (senderSocket) {
     senderSocket.emit('dm message deleted', deleteData);
   }
 
   res.json({ success: true });
 });
-
 // API to change username
 app.post('/api/change-username', async (req, res) => {
   if (!req.username) {
@@ -2361,6 +2452,7 @@ io.on('connection', (socket) => {
       time: ts.time
     };
     saveToGoogleSheets({
+      id: messageData.id,
       type: "DM",
       username: user,
       recipient: targetUser,
