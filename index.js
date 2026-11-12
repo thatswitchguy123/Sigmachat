@@ -13,6 +13,34 @@ const io = require('socket.io')(http, {
   }
 });
 const PORT = process.env.PORT || 5000;
+// ============== GOOGLE SHEETS LOGGING ==============
+
+async function saveToGoogleSheets(data) {
+  if (!process.env.GOOGLE_SCRIPT_URL ||
+      !process.env.GOOGLE_SHEETS_SECRET) {
+    return;
+  }
+
+  try {
+    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        ...data,
+        secret: process.env.GOOGLE_SHEETS_SECRET
+      })
+    });
+
+    if (!response.ok) {
+      console.error("Google Sheets HTTP error:", response.status);
+    }
+
+  } catch (error) {
+    console.error("Google Sheets logging failed:", error);
+  }
+}
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -1982,6 +2010,104 @@ function sendTypingSnapshot(socket, room) {
   }
 }
 
+
+// Google Sheets -> SigmaChat #general
+let googleSheetsLastRow = 1;
+let googleSheetsPolling = false;
+
+async function pollGoogleSheets() {
+  if (googleSheetsPolling) return;
+
+  if (!process.env.GOOGLE_SCRIPT_URL ||
+      !process.env.GOOGLE_SHEETS_SECRET) return;
+
+  googleSheetsPolling = true;
+
+  try {
+    const url = new URL(process.env.GOOGLE_SCRIPT_URL);
+    url.searchParams.set(
+      "secret",
+      process.env.GOOGLE_SHEETS_SECRET
+    );
+    url.searchParams.set(
+      "after",
+      String(googleSheetsLastRow)
+    );
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || "Google Sheets error");
+    }
+
+    for (const row of result.messages) {
+      const messageId = `google-sheet-${row.row}`;
+      const room = "sigmachat:general";
+
+      const messages = loadServerMessages(
+        "sigmachat",
+        "general"
+      );
+
+      // Avoid importing the same row twice
+      if (messages.some(m => String(m.id) === messageId)) {
+        continue;
+      }
+
+      const timestamp = row.timestamp
+        ? new Date(row.timestamp)
+        : new Date();
+
+      const messageData = {
+        id: messageId,
+        username: row.username || "Google Sheets",
+        message: String(row.message),
+        date: timestamp.toLocaleDateString(),
+        time: timestamp.toLocaleTimeString(),
+        room
+      };
+
+      messages.push(messageData);
+
+      saveServerMessages(
+        "sigmachat",
+        "general",
+        messages
+      );
+
+      io.to(room).emit("chat message", messageData);
+
+      console.log(
+        `[Google Sheets] Imported message from ${messageData.username}`
+      );
+    }
+
+    googleSheetsLastRow = Math.max(
+      googleSheetsLastRow,
+      Number(result.nextRow) || googleSheetsLastRow
+    );
+
+  } catch (error) {
+    console.error(
+      "[Google Sheets] Import failed:",
+      error.message
+    );
+  } finally {
+    googleSheetsPolling = false;
+  }
+}
+
+// Check for new spreadsheet messages every 5 seconds
+setInterval(pollGoogleSheets, 5000);
+pollGoogleSheets();
+
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   const user = socket.username;
@@ -2124,6 +2250,12 @@ io.on('connection', (socket) => {
       time: ts.time,
       room: currentRoom
     };
+    saveToGoogleSheets({
+      type: "Channel",
+      username: user,
+      message: msg,
+      room: currentRoom
+    });
 
     // Save to server channel messages
     const messages = loadServerMessages(currentServerId, currentChannelId);
@@ -2232,6 +2364,12 @@ io.on('connection', (socket) => {
       date: ts.date,
       time: ts.time
     };
+    saveToGoogleSheets({
+      type: "DM",
+      username: user,
+      recipient: targetUser,
+      message: message
+    });
 
     const dmKey = [user, targetUser].sort().join('_');
     const dmFile = path.join(__dirname, `dm_${dmKey}.json`);
