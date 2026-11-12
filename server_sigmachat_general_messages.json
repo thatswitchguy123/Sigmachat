@@ -1,40 +1,12 @@
 [
   {
-    "id": "mv8kdjsciml3gcsqu",
+    "id": "mwe4ab3xlwmovf98e",
     "username": "thatswitchguy",
-    "message": "Now with video streaming and shift click/right click to edit or delete message",
-    "date": "Oct 14, 2026",
-    "time": "08:30 PM",
-    "room": "sigmachat:general",
-    "edited": true,
-    "editedAt": "9:06:07 PM"
-  },
-  {
-    "id": "mwcdlqqc0h0er42bi",
-    "username": "thatswitchguy",
-    "message": "other heloo",
-    "date": "Nov 11, 2026",
-    "time": "05:11 PM",
-    "room": "sigmachat:general",
-    "edited": true,
-    "editedAt": "5:11:58 PM"
-  },
-  {
-    "id": "google-sheet-2",
-    "username": "thatswitchguy",
-    "message": "67hello",
-    "date": "11/11/2026",
-    "time": "5:11:29 PM",
-    "room": "sigmachat:general",
-    "edited": true,
-    "editedAt": "9:30:34 PM"
-  },
-  {
-    "id": "mwe2bbw6ycef9tiue",
-    "username": "thatswitchguy",
-    "message": "hi",
+    "message": "the beginning",
     "date": "Nov 12, 2026",
-    "time": "09:30 PM",
-    "room": "sigmachat:general"
+    "time": "10:26 PM",
+    "room": "sigmachat:general",
+    "edited": true,
+    "editedAt": "10:26:32 PM"
   }
 ]

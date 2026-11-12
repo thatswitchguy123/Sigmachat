@@ -29,16 +29,19 @@ async function saveToGoogleSheets(data) {
       },
       body: JSON.stringify({
         ...data,
+        action: "append",
         secret: process.env.GOOGLE_SHEETS_SECRET
       })
     });
 
-    if (!response.ok) {
-      console.error("Google Sheets HTTP error:", response.status);
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || `HTTP ${response.status}`);
     }
 
   } catch (error) {
-    console.error("Google Sheets logging failed:", error);
+    console.error("[Google Sheets] Save failed:", error.message);
   }
 }
 
@@ -2019,20 +2022,16 @@ async function pollGoogleSheets() {
   if (googleSheetsPolling) return;
 
   if (!process.env.GOOGLE_SCRIPT_URL ||
-      !process.env.GOOGLE_SHEETS_SECRET) return;
+      !process.env.GOOGLE_SHEETS_SECRET) {
+    return;
+  }
 
   googleSheetsPolling = true;
 
   try {
     const url = new URL(process.env.GOOGLE_SCRIPT_URL);
-    url.searchParams.set(
-      "secret",
-      process.env.GOOGLE_SHEETS_SECRET
-    );
-    url.searchParams.set(
-      "after",
-      String(googleSheetsLastRow)
-    );
+    url.searchParams.set("secret", process.env.GOOGLE_SHEETS_SECRET);
+    url.searchParams.set("after", String(googleSheetsLastRow));
 
     const response = await fetch(url);
 
@@ -2050,12 +2049,8 @@ async function pollGoogleSheets() {
       const messageId = `google-sheet-${row.row}`;
       const room = "sigmachat:general";
 
-      const messages = loadServerMessages(
-        "sigmachat",
-        "general"
-      );
+      const messages = loadServerMessages("sigmachat", "general");
 
-      // Avoid importing the same row twice
       if (messages.some(m => String(m.id) === messageId)) {
         continue;
       }
@@ -2103,10 +2098,10 @@ async function pollGoogleSheets() {
   }
 }
 
-// Check for new spreadsheet messages every 5 seconds
+console.log("[Google Sheets] Bidirectional sync started");
+
 setInterval(pollGoogleSheets, 5000);
 pollGoogleSheets();
-
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -2251,6 +2246,7 @@ io.on('connection', (socket) => {
       room: currentRoom
     };
     saveToGoogleSheets({
+      id: messageData.id,
       type: "Channel",
       username: user,
       message: msg,
