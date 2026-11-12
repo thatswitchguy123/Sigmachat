@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "mwe5uklzfm38830im",
+    "username": "qwerty",
+    "message": "hi",
+    "date": "Nov 12, 2026",
+    "time": "11:09 PM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwe5v6emfc0tzzamj",
+    "username": "thatswitchguy",
+    "message": "yo",
+    "date": "Nov 12, 2026",
+    "time": "11:10 PM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwe5v971p1z7123v7",
+    "username": "qwerty",
+    "message": "yo",
+    "date": "Nov 12, 2026",
+    "time": "11:10 PM",
+    "room": "sigmachat:general"
+  }
+]

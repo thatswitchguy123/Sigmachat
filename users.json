@@ -8,5 +8,10 @@
     "username": "Adam",
     "password": "$2a$10$szonTz5gNnhc6kLncsYfTOj67Hc/uWp3Latnlyj8Y4Gnxsd/EB01G",
     "createdAt": "2026-10-14T20:35:14.589Z"
+  },
+  "qwerty": {
+    "username": "qwerty",
+    "password": "$2a$10$cl9Ye0lWceTvMbOVj.57Z.7u5fqg6.7TVODiw3q0rzbpWvb3wOnV6",
+    "createdAt": "2026-11-12T23:09:20.205Z"
   }
 }
