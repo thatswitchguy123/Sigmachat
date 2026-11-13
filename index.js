@@ -14,35 +14,32 @@ const io = require('socket.io')(http, {
 });
 const PORT = process.env.PORT || 5000;
 // ============== GOOGLE SHEETS LOGGING ==============
-
 async function saveToGoogleSheets(data) {
-  if (!process.env.GOOGLE_SCRIPT_URL ||
-      !process.env.GOOGLE_SHEETS_SECRET) {
-    return;
+  if (!process.env.GOOGLE_SCRIPT_URL) {
+    throw new Error("GOOGLE_SCRIPT_URL is missing");
   }
 
-  try {
-    const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        ...data,
-        action: "append",
-        secret: process.env.GOOGLE_SHEETS_SECRET
-      })
-    });
+  const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      ...data,
+      action: "append",
+      secret: process.env.GOOGLE_SHEETS_SECRET
+    })
+  });
 
-    const result = await response.json();
+  const result = await response.json();
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || `HTTP ${response.status}`);
-    }
+  console.log("[Google Sheets] APPEND response:", result);
 
-  } catch (error) {
-    console.error("[Google Sheets] Save failed:", error.message);
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || `HTTP ${response.status}`);
   }
+
+  return result;
 }
 
 async function updateGoogleSheetsMessage(data) {
@@ -1783,25 +1780,42 @@ app.put('/api/servers/:serverId/channels/:channelId/messages/:messageId', async 
   res.json({ success: true });
 });
 
-// API to delete a room message
-app.delete('/api/servers/:serverId/channels/:channelId/messages/:messageId', (req, res) => {
+app.delete('/api/servers/:serverId/channels/:channelId/messages/:messageId', async (req, res) => {
   if (!req.username) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
   const { serverId, channelId, messageId } = req.params;
+  const messages = loadServerMessages(serverId, channelId);
 
-  let messages = loadServerMessages(serverId, channelId);
-  const index = messages.findIndex(m => m.id === messageId || m.timestamp === messageId);
+  const index = messages.findIndex(m =>
+    String(m.id) === String(messageId) ||
+    String(m.timestamp) === String(messageId)
+  );
 
   if (index === -1) {
-    return res.status(404).json({ error: 'Message not found, try refreshing the page' });
+    return res.status(404).json({ error: 'Message not found' });
   }
 
   const message = messages[index];
-  
-  if (message.username !== req.username && !isServerAdmin(serverId, req.username)) {
-    return res.status(403).json({ error: 'Can only delete your own messages or be an admin' });
+
+  if (message.username !== req.username &&
+      !isServerAdmin(serverId, req.username)) {
+    return res.status(403).json({
+      error: 'Can only delete your own messages or be an admin'
+    });
+  }
+
+  // Delete from Google Sheets first.
+  try {
+    if (message.id && !String(message.id).startsWith('google-sheet-')) {
+      await deleteGoogleSheetsMessage(message.id);
+    }
+  } catch (error) {
+    console.error('Google Sheets deletion failed:', error);
+    return res.status(500).json({
+      error: 'Could not delete message from Google Sheets'
+    });
   }
 
   messages.splice(index, 1);
@@ -2336,12 +2350,20 @@ io.on('connection', (socket) => {
       time: ts.time,
       room: currentRoom
     };
+    console.log("[Google Sheets] Sending APPEND request:", messageData.id);
+
     saveToGoogleSheets({
       id: messageData.id,
       type: "Channel",
       username: user,
       message: msg,
       room: currentRoom
+    })
+    .then(result => {
+      console.log("[Google Sheets] APPEND response:", result);
+    })
+    .catch(error => {
+      console.error("[Google Sheets] APPEND failed:", error);
     });
 
     // Save to server channel messages

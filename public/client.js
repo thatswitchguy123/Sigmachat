@@ -646,6 +646,7 @@ function appendMessage(messageData, index, type) {
           ${messageActions}
         </div>
       `;
+      autoScrollIfAtBottom();
     })
     .catch(() => {
       messageDiv.innerHTML = `
@@ -661,6 +662,7 @@ function appendMessage(messageData, index, type) {
           ${messageActions}
         </div>
       `;
+      autoScrollIfAtBottom();
     });
 
   messagesContainer.appendChild(messageDiv);
@@ -1308,9 +1310,16 @@ function checkScrollPosition() {
 
 // Function to auto-scroll if user was at bottom
 function autoScrollIfAtBottom() {
-  if (isScrolledToBottom) {
+  if (!isScrolledToBottom) return;
+
+  requestAnimationFrame(() => {
     messages.scrollTop = messages.scrollHeight;
-  }
+
+    requestAnimationFrame(() => {
+      messages.scrollTop = messages.scrollHeight;
+      checkScrollPosition();
+    });
+  });
 }
 
 // Listen to scroll events

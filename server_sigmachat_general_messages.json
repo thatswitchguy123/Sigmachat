@@ -1,26 +1,132 @@
 [
   {
-    "id": "mwe5uklzfm38830im",
-    "username": "qwerty",
+    "id": "mweahm98f162sd2ju",
+    "username": "thatswitchguy",
     "message": "hi",
-    "date": "Nov 12, 2026",
-    "time": "11:09 PM",
+    "date": "Nov 13, 2026",
+    "time": "01:19 AM",
     "room": "sigmachat:general"
   },
   {
-    "id": "mwe5v6emfc0tzzamj",
+    "id": "mweai65hhlfv4tgve",
+    "username": "thatswitchguy",
+    "message": "hello",
+    "date": "Nov 13, 2026",
+    "time": "01:20 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweajwau343pam4ff",
+    "username": "test123",
+    "message": "hi",
+    "date": "Nov 13, 2026",
+    "time": "01:21 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweaqigma8wan2z7x",
+    "username": "thatswitchguy",
+    "message": "hi agin",
+    "date": "Nov 13, 2026",
+    "time": "01:26 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwearub3ug45cn9tv",
+    "username": "thatswitchguy",
+    "message": "hi but better",
+    "date": "Nov 13, 2026",
+    "time": "01:27 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweb1114xty1oe6s3",
+    "username": "thatswitchguy",
+    "message": "test123",
+    "date": "Nov 13, 2026",
+    "time": "01:34 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweb302rca2aae13a",
+    "username": "thatswitchguy",
+    "message": "HOW many times man",
+    "date": "Nov 13, 2026",
+    "time": "01:36 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweb7oghfuatl24ge",
+    "username": "thatswitchguy",
+    "message": "hui",
+    "date": "Nov 13, 2026",
+    "time": "01:40 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mweb97sdi15kz7kea",
+    "username": "thatswitchguy",
+    "message": "bro lock in",
+    "date": "Nov 13, 2026",
+    "time": "01:41 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwebcvrpqhloxn9ft",
+    "username": "thatswitchguy",
+    "message": "hi",
+    "date": "Nov 13, 2026",
+    "time": "01:44 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwebeqxfk95wv8xra",
     "username": "thatswitchguy",
     "message": "yo",
-    "date": "Nov 12, 2026",
-    "time": "11:10 PM",
+    "date": "Nov 13, 2026",
+    "time": "01:45 AM",
     "room": "sigmachat:general"
   },
   {
-    "id": "mwe5v971p1z7123v7",
-    "username": "qwerty",
-    "message": "yo",
-    "date": "Nov 12, 2026",
-    "time": "11:10 PM",
+    "id": "mwebf8vgc5lk4ntui",
+    "username": "thatswitchguy",
+    "message": "hi",
+    "date": "Nov 13, 2026",
+    "time": "01:45 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwebg0hukxfs5xq9d",
+    "username": "thatswitchguy",
+    "message": "weoinfaoirnvqwef",
+    "date": "Nov 13, 2026",
+    "time": "01:46 AM",
+    "room": "sigmachat:general",
+    "edited": true,
+    "editedAt": "1:46:56 AM"
+  },
+  {
+    "id": "mwebir5fgmprlno01",
+    "username": "thatswitchguy",
+    "message": "rth",
+    "date": "Nov 13, 2026",
+    "time": "01:48 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwebmd7a50qquonrq",
+    "username": "thatswitchguy",
+    "message": "hi",
+    "date": "Nov 13, 2026",
+    "time": "01:51 AM",
+    "room": "sigmachat:general"
+  },
+  {
+    "id": "mwebn7cpa1elhob8n",
+    "username": "thatswitchguy",
+    "message": "erg",
+    "date": "Nov 13, 2026",
+    "time": "01:52 AM",
     "room": "sigmachat:general"
   }
 ]
