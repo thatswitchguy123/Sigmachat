@@ -146,6 +146,29 @@ const upload = multer({
   }
 });
 
+
+// Google Drive image uploads (keeps images in memory instead of saving locally)
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5 MB
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      return cb(null, true);
+    }
+
+    cb(new Error('Only JPG, PNG, GIF and WEBP images are allowed!'));
+  }
+});
+
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
@@ -287,17 +310,95 @@ function getServerMessagesFile(serverId, channelId) {
   return path.join(__dirname, `server_${serverId}_${channelId}_messages.json`);
 }
 
+
 function loadServerMessages(serverId, channelId) {
   const file = getServerMessagesFile(serverId, channelId);
+
   try {
     if (fs.existsSync(file)) {
       return JSON.parse(fs.readFileSync(file, 'utf8'));
     }
   } catch (error) {
-    console.error(`Error loading messages for ${serverId}/${channelId}:`, error);
+    console.error(
+      `[JSON Backup] Error loading ${serverId}/${channelId}:`,
+      error
+    );
   }
+
   return [];
 }
+
+
+
+async function loadChannelMessagesFromSheets(serverId, channelId, before, limit = 15) {
+  if (!process.env.GOOGLE_SCRIPT_URL ||
+      !process.env.GOOGLE_SHEETS_SECRET) {
+    throw new Error("Google Sheets configuration is missing");
+  }
+
+  const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify({
+      action: "history",
+      secret: process.env.GOOGLE_SHEETS_SECRET,
+      room: `${serverId}:${channelId}`,
+      type: "Channel",
+      before: before || undefined,
+      limit: limit
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || `HTTP ${response.status}`);
+  }
+
+  // Convert Google Sheets timestamps into the fields
+  // expected by appendMessage().
+  result.messages = result.messages.map(msg => {
+    const timestamp = new Date(msg.timestamp);
+
+    return {
+      ...msg,
+      date: isNaN(timestamp.getTime())
+        ? ''
+        : timestamp.toLocaleDateString('en-GB'),
+      time: isNaN(timestamp.getTime())
+        ? ''
+        : timestamp.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+    };
+  });
+
+  return result;
+}
+
+
+
+function loadChannelMessagesFromJSON(serverId, channelId, before, limit = 15) {
+  const allMessages = loadServerMessages(serverId, channelId);
+
+  const end = before
+    ? Math.max(0, Math.min(Number(before), allMessages.length))
+    : allMessages.length;
+
+  const start = Math.max(0, end - limit);
+
+  return {
+    success: true,
+    messages: allMessages.slice(start, end),
+    nextBefore: start > 0 ? start : null,
+    hasMore: start > 0,
+    source: "json-emergency"
+  };
+}
+
 
 function saveServerMessages(serverId, channelId, messages) {
   const file = getServerMessagesFile(serverId, channelId);
@@ -1263,7 +1364,8 @@ app.delete('/api/servers/:serverId/channels/:channelId', (req, res) => {
 });
 
 // Get channel messages
-app.get('/api/servers/:serverId/channels/:channelId/messages', (req, res) => {
+
+app.get('/api/servers/:serverId/channels/:channelId/messages', async (req, res) => {
   const { serverId, channelId } = req.params;
   const currentUser = req.username;
 
@@ -1275,8 +1377,57 @@ app.get('/api/servers/:serverId/channels/:channelId/messages', (req, res) => {
     return res.status(403).json({ error: 'Access denied' });
   }
 
-  const messages = loadServerMessages(serverId, channelId);
-  res.json(messages);
+  const before = req.query.before
+    ? Number(req.query.before)
+    : undefined;
+
+  const limit = Math.min(
+    Math.max(Number(req.query.limit) || 15, 1),
+    100
+  );
+
+  try {
+    // PRIMARY: GOOGLE SHEETS
+    const result = await loadChannelMessagesFromSheets(
+      serverId,
+      channelId,
+      before,
+      limit
+    );
+
+    console.log(
+      `[Messages] Loaded ${result.messages.length} messages from Google Sheets`
+    );
+
+    return res.json({
+      ...result,
+      source: "google-sheets"
+    });
+
+  } catch (error) {
+    // EMERGENCY: JSON
+    console.error("[Google Sheets] History failed:", error);
+    console.warn("[Messages] Using emergency JSON backup");
+
+    try {
+      const fallback = loadChannelMessagesFromJSON(
+        serverId,
+        channelId,
+        before,
+        limit
+      );
+
+      return res.json(fallback);
+
+    } catch (backupError) {
+      console.error("[JSON Backup] Failed:", backupError);
+
+      return res.status(500).json({
+        success: false,
+        error: "Google Sheets and JSON backup both failed"
+      });
+    }
+  }
 });
 
 // API to vote on a poll
@@ -2608,25 +2759,72 @@ io.on('connection', (socket) => {
   });
 });
 
-// API to upload images
-app.post('/api/upload-image', upload.single('image'), (req, res) => {
-  if (!req.username) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
 
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
+// API to upload images directly to Google Drive
+app.post('/api/upload-image', imageUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.username) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated'
+      });
+    }
 
-  const serverId = req.body.serverId;
-  let imageUrl;
-  if (serverId && serverId !== 'sigmachat') {
-    imageUrl = `/uploads/servers/${serverId}/${req.file.filename}`;
-  } else {
-    imageUrl = `/uploads/${req.file.filename}`;
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No image uploaded'
+      });
+    }
+
+    const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+    const secret = process.env.GOOGLE_SHEETS_SECRET;
+
+    if (!scriptUrl || !secret) {
+      throw new Error('Google Sheets configuration is missing');
+    }
+
+    const base64Image = req.file.buffer.toString('base64');
+
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'uploadImage',
+        secret: secret,
+        filename: req.file.originalname,
+        mimeType: req.file.mimetype,
+        image: `data:${req.file.mimetype};base64,${base64Image}`
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Google Drive image upload failed');
+    }
+
+    console.log('[Google Drive] Image uploaded:', result.fileId);
+
+    res.json({
+      success: true,
+      imageUrl: result.imageUrl,
+      viewUrl: result.viewUrl,
+      fileId: result.fileId,
+      filename: result.filename,
+      mimeType: result.mimeType
+    });
+
+  } catch (error) {
+    console.error('[Google Drive] Upload error:', error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Image upload failed'
+    });
   }
-  
-  res.json({ success: true, imageUrl: imageUrl });
 });
 
 // API to get user settings

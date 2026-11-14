@@ -461,19 +461,29 @@ function selectChannel(channelId) {
   loadChannelMessages(currentServer, channelId);
 }
 
+
 function loadChannelMessages(serverId, channelId) {
-  fetch(`/api/servers/${serverId}/channels/${channelId}/messages`)
-    .then(response => response.json())
-    .then(messageList => {
+  fetch(`/api/servers/${serverId}/channels/${channelId}/messages?limit=15`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load messages');
+      }
+
+      return response.json();
+    })
+    .then(result => {
       const messagesContainer = document.getElementById('messages');
       messagesContainer.innerHTML = '';
-      
-      messageList.forEach((msg, index) => {
+
+      if (!result.success || !Array.isArray(result.messages)) {
+        throw new Error('Invalid message response');
+      }
+
+      result.messages.forEach((msg, index) => {
         appendMessage(msg, index, 'channel');
       });
-      
+
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      // Mark as scrolled to bottom since we just scrolled
       isScrolledToBottom = true;
       checkScrollPosition();
     })
@@ -481,6 +491,7 @@ function loadChannelMessages(serverId, channelId) {
       console.error('Error loading messages:', error);
     });
 }
+
 
 // Global poll update handler
 socket.on('poll updated', (data) => {
@@ -2541,7 +2552,8 @@ function closeImageModal() {
   }
 }
 
-// Image upload functionality
+
+// Image upload functionality - Google Drive
 const imageUploadInput = document.getElementById('image-upload');
 
 if (imageUploadInput) {
@@ -2549,19 +2561,20 @@ if (imageUploadInput) {
     const file = e.target.files[0];
     if (!file) return;
 
-
-    // Check file type
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      showNotification('Only image and video files are allowed', 'error');
+    // Google Drive upload currently supports images only.
+    if (!file.type.startsWith('image/')) {
+      showNotification('Only image files are supported for Google Drive uploads', 'error');
       imageUploadInput.value = '';
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('serverId', currentServer);
-
     try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('serverId', currentServer);
+
+      showNotification('Uploading image...', 'info');
+
       const response = await fetch('/api/upload-image', {
         method: 'POST',
         body: formData
@@ -2569,20 +2582,21 @@ if (imageUploadInput) {
 
       const data = await response.json();
 
-      if (data.success) {
-        // Send the file URL as a message
-        const fileUrl = window.location.origin + data.imageUrl;
-        socket.emit('chat message', fileUrl);
-        showNotification('File uploaded successfully!', 'success');
-      } else {
-        showNotification('Failed to upload file: ' + data.error, 'error');
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Image upload failed');
       }
+
+      // Send the Google Drive URL as the chat message.
+      socket.emit('chat message', data.imageUrl);
+
+      showNotification('Image uploaded successfully!', 'success');
+
     } catch (error) {
-      console.error('Error uploading image:', error);
-      showNotification('Failed to upload image', 'error');
+      console.error('Google Drive image upload error:', error);
+      showNotification('Failed to upload image: ' + error.message, 'error');
     }
 
-    // Clear the input
+    // Clear the input.
     imageUploadInput.value = '';
   });
 }
